@@ -12,7 +12,7 @@ use rand::Rng;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-static EPSILON: f64 = 0.0001;
+static EPSILON: f64 = 0.01;
 
 fn are_equal(a: f64, b: f64) -> bool {
     (a - b).abs() < EPSILON
@@ -126,6 +126,7 @@ pub struct Game {
     pub speed: f64, // Cells in ms
     pub score: u32,
     pub direction: Vector,
+    pub next_direction: Vector, // Stores the intended direction
     pub food: Vector,
     snake: Vec<Vector>, 
 }
@@ -147,6 +148,7 @@ impl Game {
             speed: speed,
             score: 0,
             direction: direction,
+            next_direction: direction,
             food: food,
             snake: snake,
         }
@@ -165,13 +167,14 @@ impl Game {
             let next = &self.snake[0];
             let segment = Segment::new(&point, next);
             let length = segment.length();
-            if length > snake_distance {
+            if length < snake_distance {
+                // Just remove the segment and move onto the next segment
+                snake_distance -= length;
+            } else {
+                // Scale this last segment and break
                 let vector = segment.get_vector().normalize().scale_by(snake_distance);
                 tail.push(point.add(&vector));
                 break
-            } else {
-                snake_distance -= length;
-
             }
         }
 
@@ -188,45 +191,44 @@ impl Game {
                 Movement::LEFT => Vector { x: -1_f64, y: 0_f64 },
 
             };
-            if !self.direction.is_opposite(&new_direction) 
-               && !self.direction.equal_to(&new_direction) {
-                let Vector { x: old_x, y: old_y } = old_head;
-                let old_x_rounded = old_x.round();
-                let old_y_rounded = old_y.round();
-                let new_x_rounded = new_head.x.round();
-                let new_y_rounded = new_head.y.round();
+            self.next_direction = new_direction;
+        }
 
-                let rounded_x_change = !are_equal(old_x_rounded, new_x_rounded);
-                let rounded_y_change = !are_equal(old_y_rounded, new_y_rounded);
+        if !self.direction.is_opposite(&self.next_direction) 
+           && !self.direction.equal_to(&self.next_direction) {
+            let Vector { x: old_x, y: old_y } = old_head;
+            let old_x_rounded = old_x.round();
+            let old_y_rounded = old_y.round();
+            let new_x_rounded = new_head.x.round();
+            let new_y_rounded = new_head.y.round();
 
-                if rounded_x_change || rounded_y_change {
-                    let (old, old_rounded, new_rounded) = if rounded_x_change {
-                        (old_x, old_x_rounded, new_x_rounded)
+            let rounded_x_change = !are_equal(old_x_rounded, new_x_rounded);
+            let rounded_y_change = !are_equal(old_y_rounded, new_y_rounded);
+
+            if rounded_x_change || rounded_y_change {
+                let (old, old_rounded, new_rounded) = if rounded_x_change {
+                    (old_x, old_x_rounded, new_x_rounded)
+                } else {
+                    (old_y, old_y_rounded, new_y_rounded)
+                };
+                let breakpoint_component = old_rounded 
+                    + (if new_rounded > old_rounded {
+                        0.5_f64
                     } else {
-                        (old_y, old_y_rounded, new_y_rounded)
-                    };
-
-                    let breakpoint_component = old_rounded 
-                        + (if new_rounded > old_rounded {
-                            0.5_f64
-                        } else {
-                            -0.5_f64
-                        });
-
-                    let breakpoint = if rounded_x_change {
-                        Vector::new(breakpoint_component, old_y)
-                    } else {
-                        Vector::new(old_x, breakpoint_component)
-                    };
-
-                    let vector = new_direction.scale_by(distance - (old - breakpoint_component).abs());
-                    let head = breakpoint.add(&vector);
-
-                    self.snake.push(breakpoint);
-                    self.snake.push(head);
-                    self.direction = new_direction;
-                }
+                        -0.5_f64
+                    });
+                let breakpoint = if rounded_x_change {
+                    Vector::new(breakpoint_component, old_y)
+                } else {
+                    Vector::new(old_x, breakpoint_component)
+                };
+                let vector = self.next_direction.scale_by(distance - (old - breakpoint_component).abs());
+                let head = breakpoint.add(&vector);
+                self.snake.push(breakpoint);
+                self.snake.push(head);
+                self.direction = self.next_direction;
             }
+            
         }
         
         self.snake.push(new_head);

@@ -51,7 +51,9 @@ import("../pkg/index.js").then(module => {
                 CONFIG.SNAKE_LENGTH,
                 new Vector(CONFIG.SNAKE_DIRECTION_X, CONFIG.SNAKE_DIRECTION_Y)
             );
-            console.log(this.game);
+
+            this.lastUpdate = undefined;
+            this.stopTime = undefined;
         }
 
         onStop() {
@@ -80,6 +82,10 @@ import("../pkg/index.js").then(module => {
                     this.game.process(lastUpdate - this.lastUpdate, this.controller.movement);
                     if (this.game.score > Storage.getBestScore()) {
                         Storage.setBestScore(this.game.score);
+                    }
+                    if (this.game.is_over()) {
+                        this.restart();
+                        return;
                     }
                 }
                 this.lastUpdate = lastUpdate;

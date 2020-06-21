@@ -41,6 +41,10 @@ impl Vector {
         Vector::new(self.x - other.x, self.y - other.y)
     }
 
+    pub fn dot_product(&self, other: &Vector) -> f64 {
+        self.x * other.x + self.y + other.y
+    }
+
     pub fn scale_by(&self, factor: f64) -> Vector {
         Vector::new(self.x * factor, self.y * factor)
     }
@@ -90,6 +94,14 @@ impl<'a> Segment<'a> {
         let first = Segment::new(self.start, point);
         let second = Segment::new(point, self.end);
         are_equal(self.length(), first.length() + second.length())
+    }
+
+    pub fn get_projected_point(&self, point: &Vector) -> Vector {
+        let vector = self.get_vector();
+        let diff = point.subtract(&self.start);
+        let u = diff.dot_product(&vector) / vector.dot_product(&vector);
+        let scaled = vector.scale_by(u);
+        self.start.add(&scaled)
     }
 }
 
@@ -253,6 +265,28 @@ impl Game {
         self.process_food();
     }
 
+    pub fn is_over(&self) -> bool {
+        let snake_head = self.snake[self.snake.len() - 1];
+        let Vector { x, y } = snake_head;
+        if x < 0_f64 || x > f64::from(self.width) {
+            return true;
+        }
+
+        if y < 0_f64 || y > f64::from(self.height) {
+            return true;
+        }
+
+        if self.snake.len() < 5 {
+            // short-circuit (can't eat itself yet)
+            return false;
+        }
+
+        let segments = get_segments_from_vectors(&self.snake[..self.snake.len() - 3]);
+        segments.iter().any(|segment| {
+            let projected = segment.get_projected_point(&snake_head);
+            segment.is_point_inside(&projected) && (Segment::new(&snake_head, &projected).length() <= 0.5)
+        })
+    }
 }
 
 // This is like the `main` function, except for JavaScript.

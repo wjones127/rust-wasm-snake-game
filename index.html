@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Snake Game</title>
+    <style>
+      html {
+        height: 100%;
+      }
+      * {
+        box-sizing: border-box;
+        outline: 0;
+        margin: 0;
+      }
+      body {
+        height: 100%;
+        background: #2c3e50;
+        padding: 60px;
+        font-family: Arial, Helvetica, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      canvas {
+        border: 2px solid white; 
+      }
+      #container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+      }
+      p {
+        color: white;
+        font-size:  3vmin;
+        margin: 2%;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🐍🐍🐍</h1>
+      <p>Current score: <span id="current-score"></span></p>
+      <p>High score: <span id="high-score"></span></p>
+    </header>
+    <div id="container"></div>
+    <noscript>This page contains webassembly and JS content, please enable Javascript in your browser.</noscript>
+    <script src="index.js"></script>
+  </body>
+</html>
